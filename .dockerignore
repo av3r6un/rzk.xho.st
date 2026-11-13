@@ -1,0 +1,13 @@
+.git
+.venv
+.vscode
+.env
+.env.*
+**/.env
+**/.env.*
+**/__pycache__
+**/node_modules
+**/dist
+logs
+data
+app.db*

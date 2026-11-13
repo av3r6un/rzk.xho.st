@@ -1,0 +1,34 @@
+services:
+  backend:
+    image: "av3rgun/rzk-backend:${IMAGE_TAG:-latest}"
+    build:
+      context: .
+      target: backend
+      args:
+        INSTALL_FFMPEG: "${INSTALL_FFMPEG:-1}"
+    environment:
+      SECRET_KEY: "${SECRET_KEY:?Set SECRET_KEY in .env}"
+      DB_URL: sqlite+aiosqlite:////data/app.db
+      ERROR_MESSAGES: src/config/error_messages.yaml
+      APP_PORT: "8090"
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8090/health', timeout=3).close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    image: "av3rgun/rzk-frontend:${IMAGE_TAG:-latest}"
+    build:
+      context: .
+      target: frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    restart: unless-stopped

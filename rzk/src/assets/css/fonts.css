@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Bartina', sans-serif;
+  src: url('../fonts/Bartina\ Thin.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 300;
+}
+@font-face {
+  font-family: 'Bartina', sans-serif;
+  src: url('../fonts/Bartina\ Light.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Bartina', sans-serif;
+  src: url('../fonts/Bartina\ Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+}
+@font-face {
+  font-family: 'Bartina', sans-serif;
+  src: url('../fonts/Bartina\ Semibold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'Bartina', sans-serif;
+  src: url('../fonts/Bartina\ Bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 800;
+}
+@font-face {
+  font-family: 'FontAwesome', sans-serif;
+  src: url('../fonts/FontAwesome.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+}
+@font-face {
+  font-family: 'FontAwesome', sans-serif;
+  src: url('../fonts/FontAwesomeRegular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+}

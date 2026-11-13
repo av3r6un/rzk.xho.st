@@ -1,0 +1,88 @@
+@import "./css/fonts.css";
+@import "./css/reset.css";
+
+*{
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  overscroll-behavior-y: none;
+  font-family: $font;
+  font-optical-sizing: auto;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: $white;
+}
+body{
+  background: $black;
+}
+
+.page{
+  max-width: 1140px;
+  margin: 0 auto;
+}
+.btn{
+  border: none;
+  background: none;
+  outline: none;
+  &_submit,
+  &_ready{
+    width: 100%;
+    color: $black;
+    background: $yellow;
+    border-radius: $radius-md;
+    height: 35px;
+    font-family: $font;
+    font-weight: 600;
+    font-size: 16px;
+    &:disabled{
+      background: rgba($yellow, .5);
+      cursor: not-allowed;
+    }
+  }
+  &_ready{
+    color: $black !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.centered {
+  text-align: center;
+}
+.clickable{
+  cursor: pointer;
+}
+
+.base{
+  &_link{
+    color: inherit;
+    text-decoration: none;
+    &.exact-active,
+    &.active {
+      color: $white;
+      font-weight: 600;
+    }
+  }
+  &_image{
+    border-radius: inherit;
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    display: flex;
+  }
+  &_loader{
+    position: absolute;
+    top: 20px;
+  }
+}
+
+.icon{
+  position: relative;
+  &:before{
+    font-family: 'FontAwesome';
+  }
+}
