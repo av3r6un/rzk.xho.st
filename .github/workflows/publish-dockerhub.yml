@@ -1,0 +1,60 @@
+name: Publish Docker images
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/ci-pr.yml
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: publish
+    concurrency: dockerhub-publish
+    env:
+      DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}
+      IMAGE_TAG: sha-${{ github.sha }}
+      INSTALL_FFMPEG: '1'
+      SECRET_KEY: unused-during-image-build
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          persist-credentials: false
+
+      - name: Build release images
+        run: |
+          : "${DOCKERHUB_NAMESPACE:?Configure Docker Hub credentials}"
+          docker compose build
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: printf '%s' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+      - name: Push commit tags and update latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          docker compose push
+
+          master_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/master" --jq '.object.sha')
+          if [[ "$master_sha" == "$GITHUB_SHA" ]]; then
+            for service in backend frontend; do
+              image="$DOCKERHUB_NAMESPACE/rzk-$service"
+              docker tag "$image:$IMAGE_TAG" "$image:latest"
+            done
+            IMAGE_TAG=latest docker compose push
+          fi
