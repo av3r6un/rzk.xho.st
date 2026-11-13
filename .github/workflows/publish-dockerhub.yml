@@ -1,8 +1,9 @@
 name: Publish Docker images
 
 on:
-  push:
+  pull_request_target:
     branches: [master]
+    types: [closed]
   workflow_dispatch:
 
 defaults:
@@ -14,8 +15,12 @@ permissions:
 
 jobs:
   test:
-    if: github.ref == 'refs/heads/master'
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.pull_request.merged) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     uses: ./.github/workflows/ci-pr.yml
+    with:
+      ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
   publish:
     needs: test
@@ -25,13 +30,15 @@ jobs:
     concurrency: dockerhub-publish
     env:
       DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}
-      IMAGE_TAG: sha-${{ github.sha }}
+      RELEASE_SHA: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+      IMAGE_TAG: sha-${{ github.event.pull_request.merge_commit_sha || github.sha }}
       INSTALL_FFMPEG: '1'
       SECRET_KEY: unused-during-image-build
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_SHA }}
 
       - name: Build release images
         run: |
@@ -51,7 +58,7 @@ jobs:
           docker compose push
 
           master_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/master" --jq '.object.sha')
-          if [[ "$master_sha" == "$GITHUB_SHA" ]]; then
+          if [[ "$master_sha" == "$RELEASE_SHA" ]]; then
             for service in backend frontend; do
               image="$DOCKERHUB_NAMESPACE/rzk-$service"
               docker tag "$image:$IMAGE_TAG" "$image:latest"
