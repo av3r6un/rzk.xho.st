@@ -1,0 +1,90 @@
+name: CI and PR
+
+on:
+  push:
+    branches-ignore: [master]
+  pull_request:
+    branches: [master]
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  docker-build-and-test:
+    name: Docker smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPOSE_PROJECT_NAME: rzk-ci
+      SECRET_KEY: ci-only-secret-key-at-least-32-bytes
+      INSTALL_FFMPEG: '0'
+      HTTP_PORT: '18080'
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Build and start Compose
+        run: |
+          docker compose build
+          docker compose up -d --no-build --wait --wait-timeout 90
+
+      - name: Check backend and Nginx
+        run: |
+          docker compose exec -T backend python -c 'import shutil, sys; assert sys.version_info >= (3, 14); assert shutil.which("ffmpeg") is None'
+          docker compose exec -T backend python -m compileall -q src main.py
+          docker compose exec -T backend alembic current --check-heads
+          curl -fsS --retry 5 --retry-connrefused http://127.0.0.1:18080/ | grep -F 'id="app"'
+          curl -fsS http://127.0.0.1:18080/health | jq -e '.body.ok == true'
+          status=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/api/rezka/cookies)
+          test "$status" = 401
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop Compose
+        if: always()
+        run: docker compose down
+
+  create-and-merge-pr:
+    if: github.event_name == 'push' && github.ref != 'refs/heads/master'
+    needs: docker-build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency: auto-merge-${{ github.ref }}
+    env:
+      GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          persist-credentials: false
+
+      - name: Create PR and enable auto-merge
+        run: |
+          : "${GH_TOKEN:?Set the AUTOMATION_TOKEN repository secret}"
+          remote_sha=$(gh api "repos/$GH_REPO/git/matching-refs/heads/$HEAD_BRANCH" | jq -r --arg ref "$GITHUB_REF" '.[] | select(.ref == $ref) | .object.sha')
+          if [[ "$remote_sha" != "$GITHUB_SHA" ]]; then
+            echo "Branch moved since this run started."
+            exit 0
+          fi
+
+          pr=$(gh pr list --base master --head "$HEAD_BRANCH" --state open --json url --jq '.[0].url // ""')
+          if [[ -z "$pr" ]]; then
+            pr=$(gh pr create --base master --head "$HEAD_BRANCH" \
+              --title "Merge $HEAD_BRANCH into master" \
+              --body "Created automatically after the Docker smoke test passed.")
+          fi
+          gh pr merge "$pr" --merge --auto --match-head-commit "$GITHUB_SHA"
