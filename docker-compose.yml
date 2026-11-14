@@ -11,6 +11,7 @@ services:
       DB_URL: sqlite+aiosqlite:////data/app.db
       ERROR_MESSAGES: src/config/error_messages.yaml
       APP_PORT: "8090"
+      DEBUG: "${DEBUG:-}"
     volumes:
       - ./data:/data
     healthcheck:

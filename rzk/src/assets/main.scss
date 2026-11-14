@@ -86,3 +86,11 @@ body{
     font-family: 'FontAwesome';
   }
 }
+
+.small_btn{
+  padding: 10px 15px;
+  background: $yellow;
+  color: $black;
+  border-radius: $radius-md;
+  font-weight: 600;
+}
