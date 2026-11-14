@@ -75,7 +75,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Create PR and enable auto-merge
+      - name: Create PR and merge the tested commit
         run: |
           : "${GH_TOKEN:?Set the AUTOMATION_TOKEN repository secret}"
           remote_sha=$(gh api "repos/$GH_REPO/git/matching-refs/heads/$HEAD_BRANCH" | jq -r --arg ref "$GITHUB_REF" '.[] | select(.ref == $ref) | .object.sha')
@@ -90,4 +90,6 @@ jobs:
               --title "Merge $HEAD_BRANCH into master" \
               --body "Created automatically after the Docker smoke test passed.")
           fi
-          gh pr merge "$pr" --merge --auto --match-head-commit "$GITHUB_SHA"
+          pr_number=${pr##*/}
+          gh api --method PUT "repos/$GH_REPO/pulls/$pr_number/merge" \
+            -f merge_method=merge -f sha="$GITHUB_SHA"
