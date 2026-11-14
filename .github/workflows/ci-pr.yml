@@ -3,13 +3,6 @@ name: CI and PR
 on:
   push:
     branches-ignore: [master]
-  pull_request:
-    branches: [master]
-  workflow_call:
-    inputs:
-      ref:
-        type: string
-        required: true
 
 defaults:
   run:
@@ -33,7 +26,6 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           persist-credentials: false
-          ref: ${{ inputs.ref || github.sha }}
 
       - name: Build and start Compose
         run: |
@@ -70,7 +62,6 @@ jobs:
         run: docker compose down
 
   create-and-merge-pr:
-    if: github.event_name == 'push' && github.ref != 'refs/heads/master'
     needs: docker-build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 5

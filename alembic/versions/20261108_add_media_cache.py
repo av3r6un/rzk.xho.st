@@ -34,10 +34,17 @@ def upgrade():
     if row['uid'] != media_uid:
       connection.execute(legacy.delete().where(legacy.c.uid == row['uid']))
 
+  if connection.dialect.name in {'mysql', 'mariadb'}:
+    for foreign_key in sa.inspect(connection).get_foreign_keys('hdrezka_media'):
+      if foreign_key['constrained_columns'] == ['owner_uid']:
+        op.drop_constraint(foreign_key['name'], 'hdrezka_media', type_='foreignkey')
+
   with op.batch_alter_table('hdrezka_media') as batch:
     batch.drop_index('ix_hdrezka_media_owner_uid')
     batch.drop_column('owner_uid')
-    batch.alter_column('upstream_id', new_column_name='id', existing_type=sa.Integer())
+    batch.alter_column(
+      'upstream_id', new_column_name='id', existing_type=sa.Integer(), existing_nullable=False,
+    )
     batch.add_column(sa.Column('name', sa.String(150)))
     batch.add_column(sa.Column('original_name', sa.String(255)))
     batch.add_column(sa.Column('cover', sa.String(255)))

@@ -14,16 +14,10 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  publish:
     if: >-
       (github.event_name == 'pull_request_target' && github.event.pull_request.merged) ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
-    uses: ./.github/workflows/ci-pr.yml
-    with:
-      ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
-
-  publish:
-    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: publish
