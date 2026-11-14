@@ -42,9 +42,11 @@
         :href="preparation.url" referrerpolicy="no-referrer" download>
         Скачать готовый MP4
       </a>
-      <div v-if="downloadTicket">
-        <a :href="downloadTicket.video_url" referrerpolicy="no-referrer">Скачать исходный MP4</a>
-        <a :href="downloadTicket.subtitles_url" referrerpolicy="no-referrer">Скачать субтитры</a>
+      <div v-if="downloadTicket" class="home_ticket">
+        <a :href="downloadTicket.video_url" referrerpolicy="no-referrer"
+          class="base_link small_btn">Скачать исходный MP4</a>
+        <a :href="downloadTicket.subtitles_url" referrerpolicy="no-referrer"
+          class="base_link small_btn">Скачать субтитры</a>
       </div>
     </div>
   </div>
@@ -296,6 +298,12 @@ export default {
     padding: 25px;
     border: 1px solid $yellow;
     border-radius: $radius-lg;
+  }
+  &_ticket{
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: flex-start;
   }
 }
 </style>
