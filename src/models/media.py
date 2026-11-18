@@ -22,6 +22,23 @@ class Media(Base):
   country: Mapped[str] = mapped_column(String(100), nullable=True)
   genres: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
   
+  def __init__(self, uid, path, id, category, **kwargs) -> None:
+    self.uid = uid
+    self.path = path
+    self.id = id
+    self.category = category
+    self.kp_id = kwargs.get('kp_id')
+    self.imdb_id = kwargs.get('imdb_id')
+    self.category = category
+    self.name = kwargs.get('name')
+    self.original_name = kwargs.get('original_name')
+    self.cover = kwargs.get('cover')
+    self.slogan = kwargs.get('slogan')
+    self.description = kwargs.get('description')
+    self.release = kwargs.get('release')
+    self.country = kwargs.get('country')
+    self.genres = kwargs.get('genres')
+  
   @property
   def json(self):
     return dict(
@@ -48,3 +65,11 @@ class SearchHistory(Base):
   id: Mapped[int] = mapped_column(Integer, primary_key=True)
   user_uid: Mapped[str] = mapped_column(ForeignKey('users.uid'))
   media_uid: Mapped[str] = mapped_column(ForeignKey('media.uid'))
+  
+  def __init__(self, user_uid, media_uid) -> None:
+    self.user_uid = user_uid
+    self.media_uid = media_uid
+    
+  @property
+  def json(self):
+    return dict(id=self.id, user_uid=self.user_uid, media_uid=self.media_uid)

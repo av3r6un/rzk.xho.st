@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from .utils import middlewares
 from .services.downloads import DOWNLOAD_PREFIX, download_ctx
 from .services.download_sources import source_cleanup_ctx
+from .modules.ffmpeg_encoders import encoder_checks_ctx
 from .config import Settings
 import logging
 import sys
@@ -42,11 +43,11 @@ def create_app():
   app.cleanup_ctx.append(db_ctx)
   app.cleanup_ctx.append(download_ctx)
   app.cleanup_ctx.append(source_cleanup_ctx)
-  if os.getenv('DEBUG', False):
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] WEB: %(message)s", "%Y-%m-%d %H:%M:%S"))
-    logging.getLogger().addHandler(console)
+  app.cleanup_ctx.append(encoder_checks_ctx)
+  console = logging.StreamHandler()
+  console.setLevel(logging.INFO)
+  console.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] WEB: %(message)s", "%Y-%m-%d %H:%M:%S"))
+  logging.getLogger().addHandler(console)
   
   return app
 

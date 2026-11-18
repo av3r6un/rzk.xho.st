@@ -6,12 +6,18 @@ from sqlalchemy.exc import IntegrityError
 from src.exceptions import JSRError
 from src.models import Media, MediaTranslator, SearchHistory, Translator
 from .hdrezka import ORIGIN, get_media_details, parse_media_url
-
+from re import fullmatch
 
 _DETAIL_FIELDS = ('name', 'original_name', 'cover', 'slogan', 'description', 'release', 'country', 'genres')
 
 
 class MediaSearchService:
+  @classmethod
+  async def find_media(cls, session, media_uid, user_uid):
+    if not fullmatch(r'[0-9a-f]{32}', media_uid):
+      raise JSRError('not_found')
+    return await cls.find(session, user_uid, media_uid)
+  
   @classmethod
   async def search(cls, session, user, url):
     path, rezka_id, category = parse_media_url(url)

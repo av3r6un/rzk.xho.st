@@ -32,3 +32,7 @@ class MediaTranslator(Base):
   def __init__(self, media_uid, translator_uid) -> None:
     self.media_uid = media_uid
     self.translator_uid = translator_uid
+    
+  @property
+  def json(self):
+    return dict(id=self.id, media_uid=self.media_uid, translator_uid=self.translator_uid)

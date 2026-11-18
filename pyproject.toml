@@ -15,6 +15,7 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "pyyaml>=6.0.3",
     "sqlalchemy[asyncio]>=2.1.8",
+    "ffmpeg-python>=0.2.0",
 ]
 
 [dependency-groups]
