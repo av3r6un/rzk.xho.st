@@ -1,11 +1,12 @@
 from aiohttp.web import json_response, middleware, StreamResponse, HTTPException, Request
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from jwt import ExpiredSignatureError, InvalidTokenError
+from src.services.downloads import DOWNLOAD_ROUTES
 from aiohttp.web_exceptions import HTTPNotFound
 from src.services import AuthService
-from .jwt import decode_token
 from src.exceptions import JSRError
-from src.services.downloads import DOWNLOAD_ROUTES
+from json import JSONDecodeError
+from .jwt import decode_token
 import inspect
 import logging
 
@@ -109,4 +110,20 @@ async def jwt_middleware(req: Request, handler, *args, **kwargs):
   
   return await handler(req, session=session)
 
-middlewares = [db_middleware, params_middleware, response_middleware, jwt_middleware]
+@middleware
+async def request_data(req: Request, handler, *args, **kwargs):
+  if not await req.read():
+    req['request_data'] = {}
+    return await handler(req, *args, **kwargs)
+
+  try:
+    payload = await req.json()
+  except (JSONDecodeError, UnicodeError):
+    raise JSRError('invalid_payload') from None
+  data = payload.get('data') if isinstance(payload, dict) else None
+  if not isinstance(data, dict):
+    raise JSRError('invalid_payload')
+  req['request_data'] = data
+  return await handler(req, *args, **kwargs)
+
+middlewares = [db_middleware, params_middleware, response_middleware, request_data, jwt_middleware]

@@ -1,4 +1,5 @@
 name: CI and PR
+run-name: ${{ github.event.head_commit.message }}
 
 on:
   push:
@@ -84,11 +85,14 @@ jobs:
             exit 0
           fi
 
+          commit_title=$(git show -s --format=%B "$GITHUB_SHA")
           pr=$(gh pr list --base master --head "$HEAD_BRANCH" --state open --json url --jq '.[0].url // ""')
           if [[ -z "$pr" ]]; then
             pr=$(gh pr create --base master --head "$HEAD_BRANCH" \
-              --title "Merge $HEAD_BRANCH into master" \
+              --title "$commit_title" \
               --body "Created automatically after the Docker smoke test passed.")
+          else
+            gh pr edit "$pr" --title "$commit_title"
           fi
           pr_number=${pr##*/}
           gh api --method PUT "repos/$GH_REPO/pulls/$pr_number/merge" \

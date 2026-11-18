@@ -125,6 +125,16 @@ async def purge_sources(session_factory):
       or_(DownloadSource.reserve_expires_at.is_(None), DownloadSource.reserve_expires_at <= now),
     ))
 
+def stream_selection(category, **kwargs):
+  translator = kwargs.get('translator_id')
+  season = kwargs.get('season')
+  episode = kwargs.get('episode')
+  if type(translator) is not int:
+    raise JSRError('invalid_payload')
+  if category == 'series' and season is None and episode is None:
+    raise JSRError('invalid_payload')
+  return translator, season, episode
+
 
 async def source_cleanup_ctx(app):
   session_factory = app['db_sessionmaker']
