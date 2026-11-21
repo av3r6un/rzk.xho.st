@@ -21,7 +21,7 @@ DOWNLOAD_ROUTES = {'download_video', 'download_subtitles', 'download_mp4', 'prep
 DOWNLOAD_PREFIX = '/api/rezka/downloads/'
 _TTL = 600
 _CHUNK_SIZE = 256 * 1024
-_RANGE = re.compile(r'bytes=(?:[0-9]{1,20}-[0-9]{0,20}|-[0-9]{1,20})')
+SINGLE_BYTE_RANGE = re.compile(r'bytes=(?:[0-9]{1,20}-[0-9]{0,20}|-[0-9]{1,20})')
 _SUBTITLE_TYPES = {'text/vtt', 'application/x-subrip', 'text/srt', 'text/plain'}
 _PLAIN_TYPES = {'application/octet-stream', 'binary/octet-stream'}
 
@@ -78,7 +78,7 @@ class DownloadService:
     return None
 
   @asynccontextmanager
-  async def open(self, url, byte_range):
+  async def open(self, url, byte_range, *, compressed=False):
     headers = {'Accept-Encoding': 'identity'}
     if byte_range:
       headers['Range'] = byte_range
@@ -86,7 +86,9 @@ class DownloadService:
       url = self.allowed_url(url)
       if url is None:
         raise JSRError('upstream_error', message='Invalid CDN URL')
-      async with self.client.get(url, headers=headers, allow_redirects=False) as upstream:
+      async with self.client.get(
+        url, headers=headers, allow_redirects=False, auto_decompress=compressed,
+      ) as upstream:
         if upstream.status not in {301, 302, 303, 307, 308}:
           yield upstream
           return
@@ -210,9 +212,11 @@ class DownloadService:
     candidates = download.video if video else download.subtitles
     if not candidates:
       raise JSRError('not_found', message='No subtitle track for this download')
+    return await self.transfer_resource(req, candidates, video=video, filename=download.filename)
 
+  async def transfer_resource(self, req, candidates, *, video, filename=None):
     byte_range = req.headers.get('Range')
-    if byte_range is not None and not _RANGE.fullmatch(byte_range):
+    if byte_range is not None and not SINGLE_BYTE_RANGE.fullmatch(byte_range):
       raise JSRError('invalid_range')
 
     response = None
@@ -235,18 +239,21 @@ class DownloadService:
         for key in ('Content-Length', 'Content-Range', 'Accept-Ranges'):
           if key in upstream.headers:
             headers[key] = upstream.headers[key]
-        if video:
-          filename, fallback = download.filename, 'video.mp4'
+        if filename is None:
+          headers['Content-Disposition'] = 'inline'
         else:
-          extension = 'vtt' if content_type == 'text/vtt' else 'srt'
-          fallback = f'subtitles.{extension}'
-          filename = download.filename.removesuffix('.mp4') + '.' + extension
-        encoded_name = quote(filename, safe='')
-        headers['Content-Disposition'] = f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{encoded_name}"
+          fallback = 'video.mp4'
+          if not video:
+            extension = 'vtt' if content_type == 'text/vtt' else 'srt'
+            fallback = f'subtitles.{extension}'
+            filename = filename.removesuffix('.mp4') + '.' + extension
+          encoded_name = quote(filename, safe='')
+          headers['Content-Disposition'] = f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{encoded_name}"
         response = StreamResponse(status=upstream.status, headers=headers)
         await response.prepare(req)
-        async for chunk in upstream.content.iter_chunked(_CHUNK_SIZE):
-          await response.write(chunk)
+        if req.method != 'HEAD':
+          async for chunk in upstream.content.iter_chunked(_CHUNK_SIZE):
+            await response.write(chunk)
         await response.write_eof()
         return response
     except (ClientError, TimeoutError, OSError, ValueError):

@@ -1,26 +1,51 @@
 <template>
   <article class="profile page">
     <div class="profile_title centered">Настройки</div>
-    <ProfileCookies v-model="settings.cookies.value" :configured="settings.cookies.configured"
-      :saving-cookies="savingCookies" @submit="updateCookies" />
+    <div class="profile_section">
+      <Cookies v-model="settings.cookies.value" :configured="settings.cookies.configured"
+        :saving="canUpdateCookies" @submit="updateCookies" />
+      <Compression v-model="settings.compression.value" :options="settings.compression.options"
+        :saving="saving.compression" @submit="updateCompression" />
+      <Encoders v-model="settings.encoders.currentValue" :configured="settings.encoders.present"
+        :saving="saving.encoders" @submit="updateEncoders" />
+    </div>
   </article>
 </template>
 <script>
 import Backend from '../services/backend.service';
-import ProfileCookies from '../components/layout/ProfileCookies.vue';
+import Cookies from '../components/layout/ProfileCookies.vue';
+import Compression from '../components/layout/ProfileCompression.vue';
+import Encoders from '../components/layout/ProfileEncoders.vue';
 
 export default {
   name: 'Profile',
-  components: { ProfileCookies },
+  components: { Cookies, Compression, Encoders },
   data() {
     return {
       backend: new Backend(),
       savingCookies: false,
+      saving: {
+        cookies: false,
+        compression: false,
+        encoders: false,
+      },
       saveError: '',
       settings: {
         cookies: {
           value: null,
           configured: false,
+        },
+        compression: {
+          value: null,
+          options: [
+            { id: 0, name: 'Качество' },
+            { id: 1, name: 'Память' },
+            { id: 2, name: 'Баланс' },
+          ],
+        },
+        encoders: {
+          currentValue: null,
+          present: [],
         },
       },
     };
@@ -47,6 +72,13 @@ export default {
         this.savingCookies = false;
       }
     },
+    getEncoders() {
+      this.backend.get('/ffmpeg/encoders')
+        .then((resp) => { this.settings.encoders.present = resp; })
+        .catch((err) => { this.encError = err; });
+    },
+    updateCompression() {},
+    updateEncoders() {},
   },
   computed: {
     cookieHeader() {
@@ -65,6 +97,7 @@ export default {
   },
   beforeMount() {
     this.getCookieState();
+    this.getEncoders();
   },
 };
 </script>
@@ -74,6 +107,10 @@ export default {
     font-weight: 600;
     font-size: 24px;
   }
-  &_error{}
+  &_section{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
 }
 </style>

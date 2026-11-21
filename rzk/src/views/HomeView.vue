@@ -22,6 +22,10 @@
         :disabled="postingSources || preparationSocket !== null">
         {{ sources.subtitles_uid ? 'Подготовить MP4' : 'Скачать' }}
       </button>
+      <button type="button" class="btn btn_submit" @click="goToWatch"
+        v-if="downloadForm.translator_id">
+        Смотреть онлайн
+      </button>
       <p v-if="downloadError" role="alert">{{ downloadError }}</p>
       <div v-if="preparation && preparation.phase !== 'ready'" class="home_progress"
         aria-live="polite">
@@ -134,7 +138,18 @@ export default {
         }
       };
     },
-    fetchRezka() {
+    goToWatch() {
+      const { uid, category } = this.rezkaForm;
+      const query = {
+        t: this.downloadForm.translator_id,
+      };
+      if (category === 'series') {
+        query.s = this.downloadForm.season;
+        query.e = this.downloadForm.episode;
+      }
+      this.$router.push({ name: 'watch', params: { id: uid }, query });
+    },
+    async fetchRezka() {
       const [url, fragment = ''] = this.rezkaForm.url.trim().split('#', 2);
       const selection = Object.fromEntries(
         Array.from(

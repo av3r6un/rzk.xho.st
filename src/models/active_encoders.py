@@ -12,3 +12,12 @@ class ActiveEncoder(Base):
   working: Mapped[bool | None]
   checked_at: Mapped[int | None] = mapped_column(BigInteger)
   error: Mapped[str | None] = mapped_column(String(512))
+
+  def __init__(self, name, **kwargs) -> None:
+    self.name = name
+    self.available = kwargs.get('available')
+    self.working = kwargs.get('working')
+
+  @property
+  def json(self):
+    return dict(name=self.name, checked_at=self.checked_at)

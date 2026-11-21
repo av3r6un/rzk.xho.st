@@ -91,6 +91,9 @@ export default {
   border: 1px solid $white;
   &.completed{
     border-color: $yellow;
+    .icon{
+      color: $yellow;
+    }
   }
   &_name{
     position: absolute;

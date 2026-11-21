@@ -1,8 +1,16 @@
 from src.modules.ffmpeg_encoders import ENCODER_CHECKS, ENCODER_NAME
 from aiohttp.web import Request, RouteTableDef
+from src.models import ActiveEncoder
 from src.exceptions import JSRError
 
 encoders = RouteTableDef()
+
+
+@encoders.get('/api/ffmpeg/encoders')
+async def get_encoders(req: Request, session):
+  enc = await ActiveEncoder.all(session)
+  return [a.json for a in enc]
+
 
 @encoders.patch('/api/ffmpeg/encoders')
 async def refresh_encoders(req: Request, *args, **kwargs):
