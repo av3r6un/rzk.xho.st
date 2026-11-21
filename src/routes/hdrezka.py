@@ -39,6 +39,7 @@ async def register_media(req: Request, session):
 
 
 @hdrezka.get('/api/rezka/media/{media_id}')
+@hdrezka.get('/api/media/{media_id}')
 async def media_details(req: Request, session):
   media = await MediaSearchService.find_media(session, req.match_info['media_id'], req['current_user'].uid)
   return await MediaSearchService.details(session, req['current_user'], media)

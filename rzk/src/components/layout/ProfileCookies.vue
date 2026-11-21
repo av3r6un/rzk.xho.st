@@ -7,30 +7,31 @@
       required
       placeholder="key=value; other=value"
       :icon="configured ? 'fa-solid fa-check' : ''"
+      :completed="configured"
       v-model="localValue" />
-    <p v-if="cookieError || saveError" role="alert"
-      class="profile_cookies-error">{{ cookieError || saveError }}</p>
+    <p v-if="cookieError" role="alert"
+      class="profile_cookies-error">{{ cookieError }}</p>
     <p class="profile_cookies-caption">В целях безопасности сохраненные cookies не отображаются.</p>
-    <button type="submit" class="btn btn_submit" :disabled="!canUpdateCookies">Сохранить</button>
+    <button type="submit" class="btn btn_submit" :disabled="!canUpdate">Сохранить</button>
   </form>
 </template>
 <script>
 import Input from '../ui/Input.vue';
 
 export default {
-  name: 'ProfileCookies',
+  name: 'Cookies',
   emits: ['update:modelValue', 'submit'],
   components: { Input },
   props: {
     modelValue: {
-      type: String,
+      type: [String, null],
       required: true,
     },
     configured: {
       type: Boolean,
       default: false,
     },
-    savingCookies: {
+    saving: {
       type: Boolean,
       default: false,
     },
@@ -44,6 +45,9 @@ export default {
     cookieError() {
       if (!this.localValue) return '';
       return 'Введите cookies в формате key=value; other=value (до 8192 символов).';
+    },
+    canUpdate() {
+      return this.saving;
     },
   },
 };

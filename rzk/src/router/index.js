@@ -3,6 +3,7 @@ import store from '../store';
 import HomeView from '../views/HomeView.vue';
 import Login from '../views/LoginView.vue';
 import Profile from '../views/ProfileView.vue';
+import Watch from '../views/WatchView.vue';
 
 const routes = [
   {
@@ -22,6 +23,11 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: Profile,
+  },
+  {
+    path: '/watch/:id',
+    name: 'watch',
+    component: Watch,
   },
 ];
 

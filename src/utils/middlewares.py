@@ -2,6 +2,7 @@ from aiohttp.web import json_response, middleware, StreamResponse, HTTPException
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from jwt import ExpiredSignatureError, InvalidTokenError
 from src.services.downloads import DOWNLOAD_ROUTES
+from src.services.watch import WATCH_ROUTES
 from aiohttp.web_exceptions import HTTPNotFound
 from src.services import AuthService
 from src.exceptions import JSRError
@@ -11,9 +12,17 @@ import inspect
 import logging
 
 
+TICKET_ROUTES = DOWNLOAD_ROUTES | WATCH_ROUTES
+
+
 @middleware
 async def db_middleware(req: Request, handler, *args, **kwargs):
-  if req.match_info.route.name in DOWNLOAD_ROUTES:
+  route_error = req.match_info.http_exception
+  if isinstance(route_error, HTTPNotFound):
+    return json_response(dict(status='error', message='Requested page is not found'), status=404)
+  if route_error is not None:
+    raise route_error
+  if req.match_info.route.name in TICKET_ROUTES:
     return await handler(req, *args, **kwargs)
   session_factory: async_sessionmaker[AsyncSession] = req.app['db_sessionmaker']
   async with session_factory() as session:
@@ -79,12 +88,8 @@ async def response_middleware(req: Request, handler, *args, **kwargs):
 async def jwt_middleware(req: Request, handler, *args, **kwargs):
   from src import settings
 
-  route_error = getattr(req.match_info, 'http_exception', None)
-  if isinstance(route_error, HTTPNotFound):
-    raise route_error
-  
   route = req.match_info.route
-  if route.name in DOWNLOAD_ROUTES:
+  if route.name in TICKET_ROUTES:
     return await handler(req)
   session = req['session']
   if route.name in {'auth_login', 'auth_register'} or any(

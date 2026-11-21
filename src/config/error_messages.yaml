@@ -11,6 +11,7 @@ missing_auth_header: ['Missing Authentication Header', 401]
 upstream_error: [HDRezka returned an invalid response, 502]
 
 download_expired: ['Download ticket expired', 410]
+watch_expired: ['Watch session expired', 410]
 invalid_range: ['Expected a single byte range', 416]
 source_expired: ['Download source expired', 410]
 assembly_busy: ['Another MP4 is being assembled. Try again later.', 503]
